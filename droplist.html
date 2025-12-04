@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Dropdown Dinamis</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    select { padding: 8px; margin-bottom: 15px; width: 300px; }
+  </style>
+</head>
+<body>
+
+<h2>Dropdown Dinamis</h2>
+
+<label>Pilih Buah</label>
+<select id="buah">
+  <option value="">-- Pilih Buah --</option>
+  <option>Apel</option>
+  <option>Pisang</option>
+  <option>Anggur</option>
+</select>
+
+<label>Warna</label>
+<select id="warna">
+  <option value="">-- Pilih Warna --</option>
+</select>
+
+<script>
+const warnaBuah = {
+  "Apel": ["Merah", "Hijau"],
+  "Pisang": ["Kuning"],
+  "Anggur": ["Ungu", "Hijau"]
+};
+
+document.getElementById("buah").onchange = () => {
+  const buah = document.getElementById("buah").value;
+  const warna = document.getElementById("warna");
+
+  warna.innerHTML = "<option>-- Pilih Warna --</option>";
+
+  if (buah in warnaBuah) {
+    warnaBuah[buah].forEach(w => {
+      warna.innerHTML += `<option>${w}</option>`;
+    });
+  }
+};
+</script>
+
+</body>
+</html>
