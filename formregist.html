@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Form Registrasi</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    .suggestion-box {
+      border: 1px solid #ccc;
+      max-width: 300px;
+      display: none;
+      position: absolute;
+      background: white;
+    }
+    .suggestion-box div {
+      padding: 8px;
+      cursor: pointer;
+    }
+    .suggestion-box div:hover {
+      background: #f0f0f0;
+    }
+    input, select {
+      display: block;
+      margin-bottom: 15px;
+      padding: 8px;
+      width: 300px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Form Registrasi Mahasiswa</h2>
+
+<form>
+  <label>Nama Mahasiswa</label>
+  <input type="text" id="nama" autocomplete="off">
+  <div id="suggestions" class="suggestion-box"></div>
+
+  <label>NIM</label>
+  <input type="text" id="nim">
+
+  <label>Mata Kuliah</label>
+  <select id="matkul">
+    <option>Pemrograman Web</option>
+    <option>Struktur Data</option>
+    <option>Sistem Operasi</option>
+    <option>Basis Data</option>
+  </select>
+
+  <label>Dosen</label>
+  <select id="dosen">
+    <option>Pak Andi</option>
+    <option>Bu Sinta</option>
+    <option>Pak Budi</option>
+    <option>Bu Rani</option>
+  </select>
+</form>
+
+<script>
+  const daftarNama = [
+    "Andi Pratama", "Budi Santoso", "Citra Dewi", "Doni Saputra",
+    "Eka Putri", "Farhan Ramadhan", "Gina Lestari", "Hafidz Alim"
+  ];
+
+  const inputNama = document.getElementById("nama");
+  const box = document.getElementById("suggestions");
+
+  inputNama.addEventListener("keyup", () => {
+    const keyword = inputNama.value.toLowerCase();
+    box.innerHTML = "";
+    if (keyword === "") {
+      box.style.display = "none";
+      return;
+    }
+    const filter = daftarNama.filter(n => n.toLowerCase().includes(keyword));
+
+    if (filter.length > 0) {
+      box.style.display = "block";
+      filter.forEach(nama => {
+        const div = document.createElement("div");
+        div.textContent = nama;
+        div.onclick = () => {
+          inputNama.value = nama;
+          box.style.display = "none";
+        };
+        box.appendChild(div);
+      });
+    } else {
+      box.style.display = "none";
+    }
+  });
+</script>
+
+</body>
+</html>
