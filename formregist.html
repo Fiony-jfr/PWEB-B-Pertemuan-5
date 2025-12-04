@@ -1,95 +1,210 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>Form Registrasi</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Form Registrasi Mahasiswa (Autocomplete Nama)</title>
   <style>
-    body { font-family: Arial; padding: 20px; }
-    .suggestion-box {
-      border: 1px solid #ccc;
-      max-width: 300px;
-      display: none;
-      position: absolute;
-      background: white;
-    }
-    .suggestion-box div {
-      padding: 8px;
-      cursor: pointer;
-    }
-    .suggestion-box div:hover {
-      background: #f0f0f0;
-    }
-    input, select {
-      display: block;
-      margin-bottom: 15px;
-      padding: 8px;
-      width: 300px;
-    }
+    body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:24px;background:#f7fafc;color:#0f172a}
+    .card{max-width:700px;margin:0 auto;background:white;border-radius:12px;padding:20px;box-shadow:0 6px 18px rgba(2,6,23,0.08)}
+    label{display:block;margin-top:12px;font-weight:600}
+    input,select,button{width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;margin-top:6px;font-size:14px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .suggestions{position:relative}
+    .list{position:absolute;left:0;right:0;background:white;border:1px solid #e5e7eb;border-radius:8px;margin-top:6px;max-height:220px;overflow:auto;z-index:20}
+    .item{padding:8px 10px;cursor:pointer}
+    .item:hover,.item.active{background:#eef2ff}
+    .hint{font-size:13px;color:#6b7280;margin-top:8px}
+    .error{color:#b91c1c;font-size:13px}
   </style>
 </head>
 <body>
+  <div class="card">
+    <h2>Form Registrasi Mahasiswa</h2>
+    <p class="hint">Ketikkan nama. Saat memasukkan huruf tertentu, akan muncul rekomendasi mata kuliah & dosen.</p>
 
-<h2>Form Registrasi Mahasiswa</h2>
+    <form id="regForm" autocomplete="off">
+      <div class="suggestions">
+        <label for="nama">Nama Mahasiswa</label>
+        <input id="nama" name="nama" type="text" placeholder="Masukkan nama..." aria-autocomplete="list" />
+        <div id="suggestList" class="list" role="listbox" hidden></div>
+      </div>
 
-<form>
-  <label>Nama Mahasiswa</label>
-  <input type="text" id="nama" autocomplete="off">
-  <div id="suggestions" class="suggestion-box"></div>
+      <div class="row">
+        <div>
+          <label for="nim">NIM</label>
+          <input id="nim" name="nim" type="text" placeholder="Contoh: 240123456" maxlength="12" />
+          <div id="nimErr" class="error" aria-live="polite"></div>
+        </div>
+        <div>
+          <label for="mataKuliah">Mata Kuliah</label>
+          <select id="mataKuliah" name="mataKuliah"><option value="">-- Pilih --</option></select>
+        </div>
+      </div>
 
-  <label>NIM</label>
-  <input type="text" id="nim">
+      <label for="dosen">Dosen</label>
+      <select id="dosen" name="dosen"><option value="">-- Pilih --</option></select>
 
-  <label>Mata Kuliah</label>
-  <select id="matkul">
-    <option>Pemrograman Web</option>
-    <option>Struktur Data</option>
-    <option>Sistem Operasi</option>
-    <option>Basis Data</option>
-  </select>
+      <button type="submit" style="margin-top:14px">Daftar</button>
+    </form>
 
-  <label>Dosen</label>
-  <select id="dosen">
-    <option>Pak Andi</option>
-    <option>Bu Sinta</option>
-    <option>Pak Budi</option>
-    <option>Bu Rani</option>
-  </select>
-</form>
+    <p class="hint">Catatan: rekomendasi disediakan lokal (client-side). Untuk dataset besar, sebaiknya gunakan endpoint server untuk query.</p>
+  </div>
 
-<script>
-  const daftarNama = [
-    "Andi Pratama", "Budi Santoso", "Citra Dewi", "Doni Saputra",
-    "Eka Putri", "Farhan Ramadhan", "Gina Lestari", "Hafidz Alim"
-  ];
+  <script>
+    // Data contoh: mapping rekomendasi berdasarkan huruf/substring yang diketik pada nama.
+    // Di dunia nyata, data ini bisa diambil dari server (API) untuk daftar yang besar.
+    const rekomendasi = [
+      {keyword:'a', mataKuliah:['Algoritma & Pemrograman','Arsitektur Komputer'], dosen:['Dr. Anisa','Budi Santoso']},
+      {keyword:'b', mataKuliah:['Basis Data','Bahasa Inggris Teknik'], dosen:['Dr. Bambang','Siti Nur']},
+      {keyword:'c', mataKuliah:['Computer Networks','Keamanan Sistem'], dosen:['Rizal Cahyo','Fitri']},
+      {keyword:'d', mataKuliah:['Dasar Pemrograman','Digital Logic'], dosen:['Dina Kurnia','Anton']},
+      {keyword:'f', mataKuliah:['Framework Web','Forensik Digital'], dosen:['Fauzi','Erni']},
+      {keyword:'g', mataKuliah:['Grafika Komputer'], dosen:['Gilang']},
+      {keyword:'k', mataKuliah:['Kecerdasan Buatan','Keamanan Jaringan'], dosen:['Kiki','Arif']},
+      {keyword:'m', mataKuliah:['Matematika Diskrit','Multimedia'], dosen:['Maya','Hendra']},
+      {keyword:'n', mataKuliah:['Numerical Methods'], dosen:['Nina']},
+      {keyword:'s', mataKuliah:['Sistem Operasi','Sistem Terdistribusi'], dosen:['Slamet','Novi']}
+    ];
 
-  const inputNama = document.getElementById("nama");
-  const box = document.getElementById("suggestions");
+    // Limit suggest items shown
+    const MAX_SUGGEST = 8;
 
-  inputNama.addEventListener("keyup", () => {
-    const keyword = inputNama.value.toLowerCase();
-    box.innerHTML = "";
-    if (keyword === "") {
-      box.style.display = "none";
-      return;
-    }
-    const filter = daftarNama.filter(n => n.toLowerCase().includes(keyword));
+    const nama = document.getElementById('nama');
+    const list = document.getElementById('suggestList');
+    const mataKuliah = document.getElementById('mataKuliah');
+    const dosen = document.getElementById('dosen');
+    const nim = document.getElementById('nim');
+    const nimErr = document.getElementById('nimErr');
 
-    if (filter.length > 0) {
-      box.style.display = "block";
-      filter.forEach(nama => {
-        const div = document.createElement("div");
-        div.textContent = nama;
-        div.onclick = () => {
-          inputNama.value = nama;
-          box.style.display = "none";
-        };
-        box.appendChild(div);
+    // utility: clear select and add placeholder
+    function populateSelect(selectEl, items){
+      selectEl.innerHTML = '<option value="">-- Pilih --</option>';
+      items.forEach(it => {
+        const opt = document.createElement('option');
+        opt.value = it;
+        opt.textContent = it;
+        selectEl.appendChild(opt);
       });
-    } else {
-      box.style.display = "none";
     }
-  });
-</script>
 
+    // filter recommendations based on input text (contains match)
+    function getRecommendations(text){
+      if(!text) return [];
+      const t = text.toLowerCase();
+      // collect matches where keyword is present in text OR first letter equals
+      const matches = [];
+      for(const r of rekomendasi){
+        if(t.includes(r.keyword) || t[0] === r.keyword){
+          matches.push(r);
+        }
+      }
+      return matches.slice(0, MAX_SUGGEST);
+    }
+
+    // render suggestion list (shows label + sample mata kuliah)
+    let activeIndex = -1;
+    function renderSuggestions(arr){
+      list.innerHTML = '';
+      activeIndex = -1;
+      if(arr.length === 0){ list.hidden = true; return; }
+      arr.forEach((r, i) => {
+        const el = document.createElement('div');
+        el.className = 'item';
+        el.setAttribute('role','option');
+        el.dataset.idx = i;
+        el.innerHTML = `<strong>Huruf: ${r.keyword.toUpperCase()}</strong><div style="font-size:13px;color:#475569">Contoh MK: ${r.mataKuliah.slice(0,2).join(', ')} &middot; Dosen: ${r.dosen.slice(0,2).join(', ')}</div>`;
+        el.addEventListener('click', ()=> selectSuggestion(i));
+        list.appendChild(el);
+      });
+      list.hidden = false;
+    }
+
+    function selectSuggestion(i){
+      const r = getRecommendations(nama.value)[i];
+      if(!r) return;
+      // fill selects with recommended lists
+      populateSelect(mataKuliah, r.mataKuliah);
+      populateSelect(dosen, r.dosen);
+      // optional: set nama value to include the keyword as hint (don't overwrite full name)
+      // nama.value = nama.value; // keep as typed
+      list.hidden = true;
+      nama.focus();
+    }
+
+    // keyboard navigation inside suggestion list
+    nama.addEventListener('keydown', (e)=>{
+      const items = Array.from(list.querySelectorAll('.item'));
+      if(list.hidden) return;
+      if(e.key === 'ArrowDown'){
+        e.preventDefault();
+        activeIndex = Math.min(activeIndex+1, items.length-1);
+        updateActive(items);
+      } else if(e.key === 'ArrowUp'){
+        e.preventDefault();
+        activeIndex = Math.max(activeIndex-1, 0);
+        updateActive(items);
+      } else if(e.key === 'Enter'){
+        if(activeIndex >=0 && items[activeIndex]){
+          e.preventDefault();
+          items[activeIndex].click();
+        }
+      } else if(e.key === 'Escape'){
+        list.hidden = true;
+      }
+    });
+
+    function updateActive(items){
+      items.forEach(it=>it.classList.remove('active'));
+      if(activeIndex >=0 && items[activeIndex]) items[activeIndex].classList.add('active');
+    }
+
+    // input listener: show recommendations as user types
+    nama.addEventListener('input', ()=>{
+      const arr = getRecommendations(nama.value);
+      renderSuggestions(arr);
+    });
+
+    // click outside to close
+    document.addEventListener('click', (e)=>{
+      if(!e.target.closest('.suggestions')){
+        list.hidden = true;
+      }
+    });
+
+    // NIM basic validation: numeric and length between 8-12
+    nim.addEventListener('input', ()=>{
+      const v = nim.value.trim();
+      if(v && !/^\d*$/.test(v)){
+        nimErr.textContent = 'NIM harus berupa angka.';
+      } else if(v.length>0 && (v.length<8 || v.length>12)){
+        nimErr.textContent = 'Panjang NIM antara 8 sampai 12 digit.';
+      } else {
+        nimErr.textContent = '';
+      }
+    });
+
+    // submit handler: simple form check
+    document.getElementById('regForm').addEventListener('submit', (e)=>{
+      e.preventDefault();
+      if(!nama.value.trim()){ alert('Nama wajib diisi.'); return; }
+      if(!nim.value.trim() || nimErr.textContent){ alert('Cek NIM terlebih dahulu.'); return; }
+      if(!mataKuliah.value){ alert('Pilih mata kuliah.'); return; }
+      if(!dosen.value){ alert('Pilih dosen.'); return; }
+      // in real app, send data to server via fetch()
+      alert(`Terdaftar:\nNama: ${nama.value}\nNIM: ${nim.value}\nMK: ${mataKuliah.value}\nDosen: ${dosen.value}`);
+    });
+
+    // Accessibility: allow focus on list items
+    list.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter' && e.target.classList.contains('item')){
+        e.target.click();
+      }
+    });
+
+    // Initialize empty selects
+    populateSelect(mataKuliah, []);
+    populateSelect(dosen, []);
+  </script>
 </body>
 </html>
