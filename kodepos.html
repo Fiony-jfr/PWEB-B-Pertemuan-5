@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Cari Kode Pos</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    select, button { padding: 8px; margin-bottom: 15px; width: 300px; }
+  </style>
+</head>
+<body>
+
+<h2>Pencarian Kode Pos Indonesia</h2>
+
+<label>Provinsi</label>
+<select id="provinsi">
+  <option value="">-- Pilih Provinsi --</option>
+</select>
+
+<label>Kabupaten / Kota</label>
+<select id="kota">
+  <option value="">-- Pilih Kota --</option>
+</select>
+
+<label>Kecamatan</label>
+<select id="kecamatan">
+  <option value="">-- Pilih Kecamatan --</option>
+</select>
+
+<button onclick="cariKodePos()">Cari Kode Pos</button>
+
+<h3 id="hasil"></h3>
+
+<script>
+const data = {
+  "Jawa Timur": {
+    "Surabaya": {
+      "Wonokromo": { kode: "60242", info: "Kecamatan Wonokromo, Kota Surabaya" },
+      "Rungkut": { kode: "60293", info: "Kecamatan Rungkut, Kota Surabaya" }
+    },
+    "Malang": {
+      "Klojen": { kode: "65111", info: "Kecamatan Klojen, Kota Malang" },
+      "Lowokwaru": { kode: "65141", info: "Kecamatan Lowokwaru, Kota Malang" }
+    }
+  },
+
+  "DKI Jakarta": {
+    "Jakarta Selatan": {
+      "Kebayoran Baru": { kode: "12120", info: "Kecamatan Kebayoran Baru" },
+      "Setiabudi": { kode: "12910", info: "Kecamatan Setiabudi" }
+    }
+  }
+};
+
+const provinsiSelect = document.getElementById("provinsi");
+const kotaSelect = document.getElementById("kota");
+const kecSelect = document.getElementById("kecamatan");
+
+// isi provinsi
+for (let prov in data) {
+  provinsiSelect.innerHTML += `<option>${prov}</option>`;
+}
+
+// ketika pilih provinsi
+provinsiSelect.onchange = () => {
+  kotaSelect.innerHTML = `<option>-- Pilih Kota --</option>`;
+  kecSelect.innerHTML = `<option>-- Pilih Kecamatan --</option>`;
+
+  const kotaList = data[provinsiSelect.value];
+  for (let kota in kotaList) {
+    kotaSelect.innerHTML += `<option>${kota}</option>`;
+  }
+};
+
+// ketika pilih kota
+kotaSelect.onchange = () => {
+  kecSelect.innerHTML = `<option>-- Pilih Kecamatan --</option>`;
+
+  const kecList = data[provinsiSelect.value][kotaSelect.value];
+  for (let kec in kecList) {
+    kecSelect.innerHTML += `<option>${kec}</option>`;
+  }
+};
+
+function cariKodePos() {
+  if (!provinsiSelect.value || !kotaSelect.value || !kecSelect.value) {
+    alert("Lengkapi semua data!");
+    return;
+  }
+
+  const result = data[provinsiSelect.value][kotaSelect.value][kecSelect.value];
+  document.getElementById("hasil").textContent =
+    `Kode Pos: ${result.kode} | Info: ${result.info}`;
+}
+</script>
+
+</body>
+</html>
